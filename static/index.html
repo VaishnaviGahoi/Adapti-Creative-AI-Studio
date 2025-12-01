@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Adapti-Creative AI Studio</title>
+    
+    <style>
+        /* BASE & LAYOUT STYLING */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            padding: 40px; 
+            background-color: #f0f2f5; 
+            color: #333;
+        }
+        .container { 
+            max-width: 900px; 
+            margin: auto; 
+            background: #ffffff; 
+            padding: 40px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #004c99; /* Deep blue header */
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+        }
+        
+        /* INPUT & CONTROL STYLING */
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: inline-block;
+            width: 250px;
+            font-weight: 600;
+        }
+        input[type="number"], input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            width: 150px;
+            transition: border-color 0.3s;
+        }
+
+        /* BUTTON STYLING */
+        button {
+            padding: 12px 20px;
+            margin-right: 15px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #check-btn {
+            background-color: #00cc66; /* Green Check */
+            color: white;
+        }
+        #check-btn:hover {
+            background-color: #00a050;
+        }
+        #generate-btn {
+            background-color: #007bff; /* Blue Generate */
+            color: white;
+        }
+        #generate-btn:hover {
+            background-color: #0056b3;
+        }
+        
+        /* RESULT BOXES */
+        .result-box { 
+            border: 1px solid #ccc; 
+            padding: 20px; 
+            margin-top: 25px; 
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        /* COMPLIANCE SCORE DYNAMIC STYLING */
+        #compliance-score { 
+            font-size: 2.5em; 
+            font-weight: 700; 
+            transition: color 0.5s; 
+        }
+        #violations-list {
+            padding-left: 20px;
+            list-style: disc;
+        }
+        #violations-list li {
+            color: #dc3545; /* Red for violation text */
+            margin-bottom: 5px;
+        }
+        
+        /* OUTPUT STATUS STYLING */
+        #output-status-box {
+            border: 1px solid #007bff; 
+        }
+        #output-status {
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Creative Guardrail™ Test</h1>
+       Simulate logo placement to test the compliance engine (Bottom-Right, Min Margin: 20px). This validates the core <strong>Innovation</strong> (CV) and <strong>Functionality</strong> (Optimization).
+        <h2>Simulated Placement on 1080x1080 Canvas</h2>
+        
+        <div class="input-group">
+            <label for="x_tl">Logo X Top-Left (e.g., 800 for compliant):</label>
+            <input type="number" id="x_tl" value="800" min="0" max="1080">
+        </div>
+
+        <div class="input-group">
+            <label for="y_tl">Logo Y Top-Left (e.g., 800 for compliant):</label>
+            <input type="number" id="y_tl" value="800" min="0" max="1080">
+        </div>
+
+        <div class="input-group">
+            <label for="headline_text">Headline Text (Test NLP concept, use 'guaranteed' to fail):</label>
+            <input type="text" id="headline_text" value="Great product!" size="40">
+        </div>
+        
+        <button id="check-btn" onclick="checkCompliance()">Run Guardrail Check</button>
+
+        <button id="generate-btn" onclick="generateOutput()">
+            Generate & Optimize Output (&lt;500 KB)
+        </button>
+        
+        <div class="result-box" style="margin-top: 25px;">
+            <h2>Compliance Results:</h2>
+            <p>Score: <span id="compliance-score">--</span></p>
+            <p>Violations:</p>
+            <ul id="violations-list">
+                <li>Click the button to check.</li>
+            </ul>
+        </div>
+        
+        <div class="result-box" id="output-status-box">
+            <h2>Output Optimization Status:</h2>
+            <p id="output-status">Ready to generate final files.</p>
+        </div>
+    </div>
+    
+    <script>
+        // --- NOTE: THIS CODE WAS MOVED FROM main.js ---
+
+        function checkCompliance() {
+            // 1. Get data from the simulation inputs
+            const x_tl = parseInt(document.getElementById('x_tl').value);
+            const y_tl = parseInt(document.getElementById('y_tl').value);
+            const headline_text = document.getElementById('headline_text').value;
+
+            // Simulate standard dimensions for the logo and canvas
+            const logo_dims = [100, 50]; 
+            const creative_dims = [1080, 1080]; 
+
+            const payload = {
+                logo_coords: [x_tl, y_tl],
+                logo_dims: logo_dims,
+                creative_dims: creative_dims,
+                headline_text: headline_text
+            };
+
+            // 2. Call the Flask API
+            fetch('http://127.0.0.1:5000/api/check-compliance', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.statusText);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // 3. Update the UI with results
+                const scoreElement = document.getElementById('compliance-score');
+                const violationsList = document.getElementById('violations-list');
+                
+                scoreElement.textContent = data.compliance_score + '%';
+                
+                // Change color based on score (UX feature)
+                scoreElement.style.color = (data.compliance_score >= 90) ? 'green' : 'red';
+
+                // Display violations
+                violationsList.innerHTML = '';
+                if (data.violations.length > 0) {
+                    data.violations.forEach(v => {
+                        const li = document.createElement('li');
+                        li.textContent = v;
+                        violationsList.appendChild(li);
+                    });
+                } else {
+                    const li = document.createElement('li');
+                    li.textContent = data.summary; // Show the 'No major violations' message
+                    violationsList.appendChild(li);
+                }
+            })
+            .catch(error => {
+                console.error('Error calling API or processing response:', error);
+                alert('API Error: Could not connect to the Creative Guardrail. Check the browser console for details.');
+            });
+        }
+
+
+        // Function to run the Output Optimization check
+        function generateOutput() {
+            const outputStatus = document.getElementById('output-status');
+            outputStatus.textContent = "Processing... Applying resize and compression...";
+            outputStatus.style.color = "#007bff"; // Blue for processing
+
+            // Call the Flask API endpoint for output generation and optimization
+            fetch('http://127.0.0.1:5000/api/generate-output', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({}) // Sending an empty body is fine for this placeholder test
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.statusText);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    outputStatus.textContent = `SUCCESS! ${data.message}`;
+                    outputStatus.style.color = "green";
+                } else {
+                    outputStatus.textContent = `FAILURE: ${data.message}`;
+                    outputStatus.style.color = "red";
+                    console.error(data.message);
+                }
+            })
+            .catch(error => {
+                outputStatus.textContent = "ERROR: Failed to connect or file not found in temp folder.";
+                outputStatus.style.color = "red";
+                console.error('API Error:', error);
+            });
+        }
+    </script>
+</body>
+</html>
