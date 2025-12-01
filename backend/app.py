@@ -18,7 +18,7 @@ TEMP_DIR = os.path.join(BASE_DIR, 'temp')
 # --- 2. Initialize Flask and enable CORS ---
 app = Flask(__name__, static_folder=STATIC_DIR)
 CORS(app) 
-
+app.config['PREFERRED_URL_SCHEME'] = 'https'
 
 # --- 3. Add the root route ('/') to serve index.html ---
 @app.route('/')
