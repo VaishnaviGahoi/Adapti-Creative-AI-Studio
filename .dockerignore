@@ -1,0 +1,8 @@
+# In .dockerignore
+__pycache__
+*.pyc
+*.log
+venv/
+temp/
+.git
+.gitignore
