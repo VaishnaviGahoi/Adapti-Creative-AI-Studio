@@ -105,7 +105,7 @@
 <body>
     <div class="container">
         <h1>Creative Guardrail™ Test</h1>
-       Simulate logo placement to test the compliance engine (Bottom-Right, Min Margin: 20px). This validates the core <strong>Innovation</strong> (CV) and <strong>Functionality</strong> (Optimization).
+        Simulate logo placement to test the compliance engine (Bottom-Right, Min Margin: 20px). This validates the core <strong>Innovation</strong> (CV) and <strong>Functionality</strong> (Optimization).
         <h2>Simulated Placement on 1080x1080 Canvas</h2>
         
         <div class="input-group">
@@ -145,18 +145,9 @@
     </div>
     
     <script>
-        // --- NOTE: THIS CODE WAS MOVED FROM main.js ---
-// In static/index.html (inside the <script> block)
-
-// Find the fetch() call for checkCompliance and generateOutput:
-fetch('https://adapti-creative-ai-studio.onrender.com/api/check-compliance', { // NOTE: Use the HTTPS URL
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-        // ADD THIS HEADER: Tells the server the request is coming from the true host
-        'X-Render-External-Hostname': 'adapti-creative-ai-studio.onrender.com' 
-    },
-    // ... rest of the code ...
+        // --- CRITICAL FIX: Define the RENDER URL globally ---
+        const RENDER_API_URL = 'https://adapti-creative-ai-studio.onrender.com/api';
+        
         function checkCompliance() {
             // 1. Get data from the simulation inputs
             const x_tl = parseInt(document.getElementById('x_tl').value);
@@ -174,16 +165,19 @@ fetch('https://adapti-creative-ai-studio.onrender.com/api/check-compliance', { /
                 headline_text: headline_text
             };
 
-            // 2. Call the Flask API
-            fetch('http://127.0.0.1:5000/api/check-compliance', {
+            // 2. Call the Flask API using the correct RENDER_API_URL
+            fetch(RENDER_API_URL + '/check-compliance', { // <-- FIXED
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    // This header is only needed if the API is secured behind a different host, 
+                    // but it's safe to include if the Python backend expects it.
+                    'X-Render-External-Hostname': 'adapti-creative-ai-studio.onrender.com' 
                 },
                 body: JSON.stringify(payload)
             })
             .then(response => {
-                if (!response.ok) {
+                if (!response.status === 500) { // Check for internal server error
                     throw new Error('Network response was not ok: ' + response.statusText);
                 }
                 return response.json();
@@ -226,7 +220,7 @@ fetch('https://adapti-creative-ai-studio.onrender.com/api/check-compliance', { /
             outputStatus.style.color = "#007bff"; // Blue for processing
 
             // Call the Flask API endpoint for output generation and optimization
-            fetch('http://127.0.0.1:5000/api/generate-output', {
+            fetch(RENDER_API_URL + '/generate-output', { // <-- FIXED
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -241,8 +235,12 @@ fetch('https://adapti-creative-ai-studio.onrender.com/api/check-compliance', { /
             })
             .then(data => {
                 if (data.success) {
-                    outputStatus.textContent = `SUCCESS! ${data.message}`;
+                    outputStatus.textContent = `SUCCESS! Size: ${data.final_size_kb.toFixed(2)} KB. ${data.message}`; // Show size
                     outputStatus.style.color = "green";
+                    
+                    // Trigger download of the file
+                    window.open('/downloads/optimized_final_creative.jpeg', '_blank');
+
                 } else {
                     outputStatus.textContent = `FAILURE: ${data.message}`;
                     outputStatus.style.color = "red";
