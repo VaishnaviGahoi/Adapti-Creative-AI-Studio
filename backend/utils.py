@@ -4,12 +4,14 @@ from PIL import Image
 import io
 import os
 
-def resize_and_compress(input_image_path, output_format="jpeg"):
+def resize_and_compress(input_image_path, output_path_absolute, output_format="jpeg"):
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Function signature corrected
     """
     Resizes the image and attempts to compress it below 500 KB using Pillow.
     
     Args:
-        input_image_path (str): The absolute path to the creative compiled by the UI.
+        input_image_path (str): The absolute path to the creative input.
+        output_path_absolute (str): The absolute, writable path (e.g., from tempfile.gettempdir()) for the final output.
         output_format (str): The desired output format (e.g., 'jpeg').
         
     Returns:
@@ -17,23 +19,20 @@ def resize_and_compress(input_image_path, output_format="jpeg"):
     """
     
     try:
+        # NOTE: Make sure your app.py is passing a valid path here!
         img = Image.open(input_image_path)
     except Exception as e:
         return None, f"Image Load Error: {e}"
 
     # 1. Resize (Standardizing the output size to meet required formats)
-    # The creative is resized to 1080x1080 as a standard social media format.
     img = img.resize((1080, 1080))
     
     # 2. Compression Loop (Target: <500KB)
     quality = 95
-    # Define a safe output path relative to the input directory
-    base_name = os.path.basename(input_image_path).split('.')[0]
     
-    # Use the same directory as the input for output (backend/temp/)
-    output_dir = os.path.dirname(input_image_path)
-    output_filename = f"optimized_{base_name}.{output_format}"
-    output_path = os.path.join(output_dir, output_filename)
+    # --- CRITICAL FIX: The output path is now the absolute path passed from app.py ---
+    output_path = output_path_absolute # Use the safe path provided by the caller
+    # ---------------------------------------------------------------------------------
 
     while quality >= 30: # Stop if quality drops too low
         buffer = io.BytesIO()
@@ -43,7 +42,7 @@ def resize_and_compress(input_image_path, output_format="jpeg"):
         size_kb = buffer.tell() / 1024
         
         if size_kb <= 500:
-            # Save the final optimized image
+            # Save the final optimized image to the safe, absolute path
             with open(output_path, 'wb') as f:
                 f.write(buffer.getvalue())
             
@@ -55,8 +54,6 @@ def resize_and_compress(input_image_path, output_format="jpeg"):
 
 # Placeholder for simple background removal logic (demonstrates CV/ML concept)
 def remove_background(image_path):
-    # In the prototype, this function would call a simple OpenCV or ML model.
-    # For now, it just demonstrates the API call:
+    # This function is okay as it just prints and doesn't write to the file system.
     print(f"Applying AI segmentation to remove background from {image_path}...")
-    # Return path to processed image
     return image_path.replace("original", "processed_no_bg")
