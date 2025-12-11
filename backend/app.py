@@ -6,14 +6,13 @@ from compliance_engine import check_logo_position, calculate_risk_score, check_t
 from utils import resize_and_compress
 import os
 import tempfile 
-# from PIL import Image # Keeping PIL import clean to avoid dependency issues
+from PIL import Image # <--- FINAL FIX: MUST import PIL here to create the image placeholder
 
 # --- 1. Define the absolute paths robustly ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) 
 STATIC_DIR = os.path.join(BASE_DIR, '..', 'static') 
 
 # --- CRITICAL FIX: Use OS-agnostic temp folder. WORKS ON WINDOWS & RENDER (/tmp/) ---
-# The tempfile module finds a path guaranteed to be writable on ANY OS.
 INPUT_IMAGE_PATH = os.path.join(tempfile.gettempdir(), 'final_creative.png')
 OUTPUT_IMAGE_PATH = os.path.join(tempfile.gettempdir(), 'optimized_final_creative.jpeg')
 
@@ -73,24 +72,20 @@ def generate_output():
     API endpoint to finalize the creative and apply mandatory optimization.
     """
     
-    # CRITICAL FIX: PLACEHOLDER IMAGE CREATION (If the file doesn't exist)
-    # We must create a small placeholder file if it's missing, using a simple open/write
-    # to avoid complex PIL crashes on initial deployment.
+    # CRITICAL FIX: Use PIL to create a valid image placeholder that utils.py can open
     if not os.path.exists(INPUT_IMAGE_PATH):
         try:
-            # Create a minimal dummy file to ensure os.path.exists() passes
-            with open(INPUT_IMAGE_PATH, 'w') as f:
-                f.write('This is a dummy creative file for testing optimization.')
+            # Create a large placeholder image (JPEG @ 95 quality) so the optimization test runs correctly.
+            Image.new('RGB', (1080, 1080), color = 'red').save(INPUT_IMAGE_PATH, format='JPEG', quality=95)
         except Exception as e:
-            # If even creating a dummy file fails, something is wrong with the temp dir.
-             return jsonify({'error': f'Cannot create temporary input file: {e}.'}), 500
+            # If PIL fails to create the file, there is a core dependency issue.
+            return jsonify({'error': f'Optimization Dependency Error (PIL): {e}.'}), 500
 
-    # Apply optimization and resizing (utils.py must be updated to use the correct path)
-    # NOTE: The resize_and_compress function in utils.py MUST be updated to accept the output path
-    output_path, status_msg = resize_and_compress(INPUT_IMAGE_PATH, OUTPUT_IMAGE_PATH, 'final_creative', output_format='jpeg') 
+    # Apply optimization and resizing
+    # FINAL SYNTAX FIX: Remove the 'final_creative' string argument
+    output_path, status_msg = resize_and_compress(INPUT_IMAGE_PATH, OUTPUT_IMAGE_PATH, output_format='jpeg') 
     
     if output_path:
-        # NOTE: The client side (JavaScript) expects the final size and message
         return jsonify({
             'success': True,
             'message': status_msg,
@@ -105,11 +100,10 @@ def generate_output():
 @app.route('/downloads/<filename>')
 def serve_optimized_file(filename):
     """Allows the user to download the file saved in the temporary folder."""
-    # CRITICAL FIX: Serve file directly from the writable temp folder
+    # Serve file directly from the writable temp folder
     return send_from_directory(tempfile.gettempdir(), filename, as_attachment=True)
 
 
 if __name__ == '__main__':
     # Run the server locally 
-    # NOTE: os.makedirs() is deleted, resolving the read-only error on Render.
     app.run(debug=True, port=5000)
